@@ -232,10 +232,78 @@
             margin-bottom: 15px;
         }
 
+        /* ========== 音乐播放器样式 ========== */
+        .music-player {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .music-btn {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            background: #ff80aa;
+            border: 2px solid white;
+            cursor: pointer;
+            box-shadow: 0 6px 16px rgba(255, 102, 153, 0.5);
+            transition: transform 0.3s, background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .music-btn:hover {
+            transform: scale(1.08);
+            background: #ff6699;
+        }
+
+        .music-icon {
+            font-size: 28px;
+            transition: transform 0.2s;
+        }
+
+        /* 音乐播放时的旋转动画 */
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .music-btn.playing .music-icon {
+            animation: rotate 3s linear infinite;
+            display: inline-block;
+        }
+
+        .music-tip {
+            background: rgba(255, 128, 170, 0.92);
+            padding: 6px 14px;
+            border-radius: 30px;
+            color: white;
+            font-size: 13px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s;
+            white-space: nowrap;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .music-player:hover .music-tip {
+            opacity: 1;
+        }
+
         @media (max-width: 700px) {
             .content { padding: 25px; }
             .hero h1 { font-size: 24px; }
             .grid-preview { grid-template-columns: 1fr; }
+            .music-btn { width: 45px; height: 45px; }
+            .music-icon { font-size: 22px; }
+            .music-tip { font-size: 11px; }
         }
     </style>
 </head>
@@ -249,8 +317,45 @@
 
 <div class="container" id="app"></div>
 
+<!-- 音乐播放器控件 -->
+<div class="music-player" id="musicPlayer">
+    <button class="music-btn" id="musicBtn">
+        <span class="music-icon">🎵</span>
+    </button>
+    <div class="music-tip">🐷 猪猪治愈曲 🐷</div>
+</div>
+
 <script>
-    // 数据存储
+    // ========== 音乐播放控制 ==========
+    const music = new Audio('pig.mp3');
+    music.loop = true;      // 循环播放
+    music.volume = 0.5;     // 音量50%
+
+    const musicBtn = document.getElementById('musicBtn');
+    let isPlaying = false;
+
+    // 尝试自动播放（可能被浏览器阻止）
+    music.play().then(() => {
+        isPlaying = true;
+        musicBtn.classList.add('playing');
+    }).catch(e => {
+        console.log('自动播放被阻止，点击按钮开始播放');
+    });
+
+    // 点击按钮控制播放/暂停
+    musicBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (isPlaying) {
+            music.pause();
+            musicBtn.classList.remove('playing');
+        } else {
+            music.play();
+            musicBtn.classList.add('playing');
+        }
+        isPlaying = !isPlaying;
+    });
+
+    // ========== 页面数据与路由逻辑 ==========
     let productsData = { products: [] };
 
     // 获取 URL 中的 id 参数
@@ -337,7 +442,6 @@
                     <p>${product.subtitle}</p>
                 </div>
                 <div class="content">
-                    <!-- 动态贴图配图区 -->
                     <div class="image-placeholder">
                         <img src="${product.imageUrl}" alt="猪猪护理配图" loading="lazy">
                     </div>
@@ -414,38 +518,11 @@
         const idParam = getUrlParameter('id');
         
         if (idParam !== null) {
-            // 有 id 参数，显示详情页
             const product = findProductById(idParam);
             app.innerHTML = renderDetailPage(product);
         } else {
-            // 无 id 参数，显示主页网格
             app.innerHTML = renderHomePage();
         }
-
-        // 重新附加漂浮猪猪（防止被覆盖，其实已在 body 内）
-        // 动态贴图效果：在内容区额外增加小浮动猪猪（可选装饰）
-        addMiniFloatingHearts();
-    }
-
-    // 增加一点动态爱心小贴图让页面更生动
-    function addMiniFloatingHearts() {
-        const container = document.querySelector('.container');
-        if (!container) return;
-        // 避免重复添加
-        if (document.querySelector('.dynamic-heart')) return;
-        
-        const heartSpan = document.createElement('div');
-        heartSpan.style.position = 'fixed';
-        heartSpan.style.bottom = '15px';
-        heartSpan.style.right = '20px';
-        heartSpan.style.fontSize = '30px';
-        heartSpan.style.opacity = '0.7';
-        heartSpan.style.pointerEvents = 'none';
-        heartSpan.style.zIndex = '1000';
-        heartSpan.classList.add('dynamic-heart');
-        heartSpan.innerHTML = '🐷💖🐽';
-        heartSpan.style.animation = 'float 3s ease-in-out infinite';
-        document.body.appendChild(heartSpan);
     }
 
     // 页面启动
